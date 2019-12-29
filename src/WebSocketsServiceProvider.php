@@ -23,6 +23,7 @@ use BeyondCode\LaravelWebSockets\WebSockets\Channels\ChannelManagers\ArrayChanne
 use BeyondCode\LaravelWebSockets\Dashboard\Http\Middleware\Authorize as AuthorizeDashboard;
 use BeyondCode\LaravelWebSockets\Statistics\Http\Middleware\Authorize as AuthorizeStatistics;
 use BeyondCode\LaravelWebSockets\Statistics\Http\Controllers\WebSocketStatisticsEntriesController;
+use React\EventLoop\Factory;
 
 class WebSocketsServiceProvider extends ServiceProvider
 {
@@ -63,7 +64,11 @@ class WebSocketsServiceProvider extends ServiceProvider
         }
 
         $this->app->singleton(ReplicationInterface::class, function () {
-            return (new RedisClient())->boot($this->loop);
+            return (new RedisClient())->boot(Factory::create());
+        });
+
+        $this->app->singleton(BroadcastManager::class, function ($app) {
+            return new BroadcastManager($app);
         });
 
         $this->app->get(BroadcastManager::class)->extend('redis-pusher', function ($app, array $config) {
