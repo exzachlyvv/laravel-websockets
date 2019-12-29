@@ -27,7 +27,7 @@ use React\EventLoop\Factory;
 
 class WebSocketsServiceProvider extends ServiceProvider
 {
-    public function boot()
+    public function boot(BroadcastManager $broadcastManager)
     {
         $this->publishes([
             __DIR__.'/../config/websockets.php' => base_path('config/websockets.php'),
@@ -50,10 +50,10 @@ class WebSocketsServiceProvider extends ServiceProvider
             Console\CleanStatistics::class,
         ]);
 
-        $this->configurePubSub();
+        $this->configurePubSub($broadcastManager);
     }
 
-    protected function configurePubSub()
+    protected function configurePubSub(BroadcastManager $broadcastManager)
     {
         if (config('websockets.replication.enabled') !== true || config('websockets.replication.driver') !== 'redis') {
             $this->app->singleton(ReplicationInterface::class, function () {
@@ -67,11 +67,7 @@ class WebSocketsServiceProvider extends ServiceProvider
             return (new RedisClient())->boot(Factory::create());
         });
 
-        $this->app->singleton(BroadcastManager::class, function ($app) {
-            return new BroadcastManager($app);
-        });
-
-        $this->app->get(BroadcastManager::class)->extend('redis-pusher', function ($app, array $config) {
+        $broadcastManager->extend('redis-pusher', function ($app, array $config) {
             $pusher = new Pusher(
                 $config['key'], $config['secret'],
                 $config['app_id'], $config['options'] ?? []
